@@ -1,21 +1,16 @@
+// pages/index.js
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import ChatList from '../components/ChatList';
 import Auth from '../components/Auth';
+import TestComponent from '../components/TestComponent';
 
 export default function Home() {
   const [session, setSession] = useState(null);
+  const [isRegistering, setIsRegistering] = useState(false); // Estado para saber si está registrándose
 
   useEffect(() => {
-    // Obtener la sesión de usuario de forma asíncrona
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-    };
-    
-    getSession();
-
-    // Listener para cambios en la autenticación
+    // Escuchar cambios en la autenticación
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
@@ -28,12 +23,13 @@ export default function Home() {
   return (
     <div>
       <h1>Chat con GPT</h1>
+      <TestComponent /> {/* Aquí se renderiza el componente de prueba */}
       {session ? (
         <div>
           <ChatList userId={session.user.id} />
         </div>
       ) : (
-        <Auth />
+        <Auth setSession={setSession} isRegistering={isRegistering} setIsRegistering={setIsRegistering} />
       )}
     </div>
   );
