@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
-import bcrypt from 'bcryptjs';
 
 export default function Auth() {
   const [email, setEmail] = useState('');
@@ -10,31 +8,32 @@ export default function Auth() {
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    // 1. Buscar el usuario en la tabla "user"
-    const { data: user, error } = await supabase
-      .from('user')
-      .select('id, password') // Selecciona solo la contraseña y el id
-      .eq('email', email)
-      .single(); // single() asegura que solo obtengas un resultado
-
-    if (error || !user) {
-      setErrorMessage('Usuario no encontrado');
+    // Verificar que el email y la contraseña no estén vacíos
+    if (!email || !password) {
+      console.error('El correo y la contraseña son requeridos');
+      setErrorMessage('El correo y la contraseña son requeridos');
       return;
     }
 
-    // 2. Comparar la contraseña proporcionada con la almacenada
-    const passwordMatch = await bcrypt.compare(password, user.password);
+    // Realiza la consulta a la API de inicio de sesión
+    const response = await fetch('/api/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
 
-    if (!passwordMatch) {
-      setErrorMessage('Contraseña incorrecta');
+    // Manejo de la respuesta
+    if (!response.ok) {
+      const errorData = await response.json();
+      setErrorMessage(errorData.error || 'Error al iniciar sesión');
       return;
     }
 
-    // 3. Almacenar la sesión (puedes usar localStorage o un JWT, según prefieras)
-    localStorage.setItem('userId', user.id);
-    alert('Inicio de sesión exitoso');
-
-    // Aquí podrías redirigir al usuario a la página de chat
+    const data = await response.json();
+    console.log('Inicio de sesión exitoso:', data);
+    // Aquí puedes redirigir al usuario o realizar otras acciones
   };
 
   return (
@@ -46,12 +45,14 @@ export default function Auth() {
           placeholder="Ingresa tu correo"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          required
         />
         <input
           type="password"
           placeholder="Ingresa tu contraseña"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          required
         />
         <button type="submit">Iniciar sesión</button>
       </form>
